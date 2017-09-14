@@ -1,0 +1,35 @@
+sql> select count(*) from `movie-actor` where actor_movie_rank_weight='';
++----------+
+| count(*) |
++----------+
+|      145 |
++----------+
+1 row in set (0.02 sec)
+
+mysql> select count(*) from `movie-actor` where actor_movie_rank_weight!='';
++----------+
+| count(*) |
++----------+
+|    34442 |
++----------+
+1 row in set (0.03 sec)
+
+mysql> select count(*) from `movie-actor`;
++----------+
+| count(*) |
++----------+
+|    34587 |
++----------+
+1 row in set (0.03 sec)
+
+
+The 145 row values are 3 digit and using the decay constant 0.01 gives them very low values. Rounding them to 5 digits gives a 0 value to them.
+So instead of updating the 
+
+
+
+
+
+
+
+

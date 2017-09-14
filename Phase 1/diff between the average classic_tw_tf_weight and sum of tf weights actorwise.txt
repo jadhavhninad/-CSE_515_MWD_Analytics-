@@ -1,0 +1,96 @@
+ninad@ninad-lpc:~/PycharmProjects/MWD_Phase1/phase1_code$ python print_actor_vector.py 280177 tf
+[('201', 0.98606), ('901', 0.98507), ('450', 0.98467), ('416', 0.98268), ('1047', 0.98185), ('230', 0.97812), ('863', 0.97693), ('155', 0.97637), ('1085', 0.976), ('730', 0.97425), ('22', 0.97253), ('705', 0.97239), ('704', 0.97193), ('422', 0.97132), ('424', 0.97074), ('439', 0.96403), ('479', 0.96313), ('164', 0.9631), ('691', 0.9628), ('846', 0.96276), ('871', 0.96196), ('865', 0.96171), ('613', 0.96158), ('614', 0.96125), ('574', 0.96106), ('107', 0.88999), ('268', 0.5837), ('1117', 0.57875), ('17', 0.57823), ('743', 0.57721)]
+
+
+
+ninad@ninad-lpc:~/PycharmProjects/MWD_Phase1/phase1_code$ python print_actor_vector.py 280177 tfidf
+[('574', 760.0), ('614', 760.0), ('613', 510.0), ('424', 402.0), ('743', 327.0), ('865', 295.0), ('871', 225.0), ('422', 209.0), ('691', 149.0), ('704', 142.0), ('22', 135.0), ('846', 125.0), ('479', 122.0), ('1117', 117.0), ('705', 115.0), ('17', 109.0), ('164', 95.0), ('416', 69.0), ('450', 63.0), ('439', 63.0), ('730', 59.0), ('901', 56.0), ('1085', 42.0), ('201', 40.0), ('155', 35.0), ('107', 28.0), ('1047', 28.0), ('268', 18.0), ('863', 17.0), ('230', 14.0)]
+
+
+
+USING NEW code for add tagweights based on the frequency:
+ninad@ninad-lpc:~/PycharmProjects/MWD_Phase1/phase1_code$ python print_actor_vector.py 280177 tf
+[('201', 2.69847), ('22', 0.97127), ('424', 0.97074), ('107', 0.87916), ('17', 0.57823), ('863', 0.0035799999999999994), ('230', 0.00136), ('1117', 0.00116), ('450', 0.00102), ('901', 0.00089), ('439', 0.00086), ('155', 0.0007899999999999999), ('730', 0.0007199999999999999), ('422', 0.00062), ('1085', 0.00058), ('705', 0.00054), ('704', 0.00052), ('416', 0.00052), ('614', 0.00046), ('865', 0.00046), ('871', 0.00045), ('479', 0.00036), ('613', 0.00032), ('691', 0.00028), ('574', 0.00027), ('743', 0.00026), ('164', 0.00026), ('268', 0.00026), ('846', 0.00026), ('1047', 0.00026)]
+
+
+
+
+
+
+OLD CODE:
+
+from mysqlConn import DbConnect
+import argparse
+import operator
+
+#DB connector and curosor
+db = DbConnect()
+db_conn = db.get_connection()
+cur2 = db_conn.cursor();
+
+#Argument parser
+parser = argparse.ArgumentParser()
+parser.add_argument("ACTOR_ID")
+parser.add_argument("MODEL")
+args = parser.parse_args()
+
+#print args.ACTOR_ID
+
+#TF MODEL
+#Subtask:1 - Get tags and movieRank weight for an actor id
+
+    #a. A dictionary to store the returned data.
+data_dictionary_tf = {}
+data_dictionary_tf_idf = {}
+
+#Get sum of the rank_weights for calculating the idf value (sum of all rankweights/ sum of rank_weights for a specific tag)
+
+cur2.execute("SELECT SUM(actor_movie_rank_weight) FROM `movie-actor`")
+result0 = cur2.fetchone()
+total_rank_weight = result0[0]
+#print total_rank_weight
+
+cur2.execute("SELECT movieid,actor_movie_rank_weight FROM `movie-actor` where actorid = %s",[args.ACTOR_ID])
+result1 = cur2.fetchall()
+for data1 in result1:
+    #print data1
+    act_movie_id   = data1[0]
+    act_movie_rank = data1[1]
+    actor_tag_id=""
+    final_tag_wt=""
+
+    #Select distint tagIDs for the movieID
+    cur2.execute("SELECT DISTINCT(tagid) FROM mltags WHERE movieid = %s",[act_movie_id])
+    result2 = cur2.fetchall()
+    for data2 in result2:
+        actor_tag_id = data2[0]
+
+        cur2.execute("Select classic_tw_tf,rank_wt_sum from `genome-tags` where tagID=%s",[actor_tag_id])
+        result3 = cur2.fetchone()
+
+        # Get the classic_tw_tf (classic time weight tag frequecny) for each ID
+        final_tag_wt = round((float(result3[0]) + float(act_movie_rank)) , 5)
+        #print "tag = %s and its weight = %s." % (actor_tag_id, final_tag_wt)
+        data_dictionary_tf[actor_tag_id] = final_tag_wt
+
+
+        #Get the idf value using rank_wt_sum
+        tag_idf = round((float(total_rank_weight) / float(result3[1])),5)
+        tf_idf = round(final_tag_wt * tag_idf)
+        #print "tag = %s and its idf = %s." % (actor_tag_id, tag_idf)
+        #print "tag = %s and its tf-idf = %s." % (actor_tag_id,tf_idf)
+        data_dictionary_tf_idf[actor_tag_id] = tf_idf
+
+        #print "--------------------------------"
+
+actor_model_value_tf      = sorted(data_dictionary_tf.items(), key=operator.itemgetter(1), reverse=True)
+actor_model_value_tf_idf  = sorted(data_dictionary_tf_idf.items(), key=operator.itemgetter(1), reverse=True)
+
+if args.MODEL == "tf":
+    print actor_model_value_tf
+else:
+    print actor_model_value_tf_idf
+
+#print data_dictionary
+
+#TF-IDF

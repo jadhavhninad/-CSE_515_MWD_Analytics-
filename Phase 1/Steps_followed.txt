@@ -1,0 +1,151 @@
+1. Install pycharm IDE
+-----------------------
+
+2. install pip and pymysql module and check version
+---------------------------------------------------
+python -m pip --version
+
+3. Using python version 2.7
+----------------------------
+
+4. All CSV data imported into the database using pymsql connector
+-----------------------------------------------------------------
+(refer queryDB.py)
+update: the connector has been changed to mysqldb.
+
+5. Migrated from pymysql to mysqldb python connector 
+----------------------------------------------------
+	as the tuple structure for mysqldb was easier to access than pymysql. i.e could be accessed using index.
+
+sudo apt-get install python-dev libmysqlclient-dev
+pip install MySQL-python
+
+6.Took clean database backup before starting the modifications on the live DB.
+------------------------------------------------------------------------------
+
+Create a backup DB, the use the following generic query:
+mysqldump -u DB_user --password=DB_pass DB_name | mysql -u DB_user --password=DB_pass -h DB_host DB_name 
+
+
+7.Calculating Tag Frequency from the mltags table:
+--------------------------------------------------
+(Refer tagCount.py)
+	a.The tag frequency was calculated for each tagID in the genome-tags table based on the data from mltags table. The new frequency data was stored in genome-tags table as tag_count.
+
+
+8.Calculating the weight of tag newness based on tag timestamp in mltags table:
+--------------------------------------------------------------------------------
+(refer tagCount.py)
+	-->a]. First the distrubution of the tags based on years was considered and count wer obtained as follows by time sorting the data in excel and checking the count manually :
+year	tag count
+2006	1301
+2007	916	
+2008	337
+2009	5
+An option to generate weights keeping in mind the skewed data was considered, but further exploration of this option was inconclusive. Also the assignment states that 'newest tags shoudl be given higher weights'
+
+	-->b].Generating weights based on exponential decay : A simple exponential decay function is being explored which give weight as follows - weight = exp(-k*timediff) , where timediff = latest_timestamp - timestamp_val_of_a_tag and 'k' is a decay constant. This was compared with the values obtained from invers squared function [weight = 1/(k*timediff)^2]. It was observed that the exponential decay gives a better normalized distribution with any additional operations required. So it was selected as the primary time-weight decay function.
+
+Once the ts_wt (timestamp weight) is obtained, it is updated in the mltags table under 'newness_weight' column. We can observe by the sorted table output that even though >50% of the data lies in year 2006, the weight for that year starts from ~0.47. Thus we can be sure that the newest tags have been assigned more weights and as the timestamp gets older, the weights decrease exponentially.  
+
+Using an exponential funtion because this helps us to maintain the relevance of a tag based on its timestamp. In essence, the function gives higher weight to latest tags and the weight of older tags in lowered exponential for their low relevance. This gives better performance than a liner decay which will assume equal relevance to all the timestamps.
+
+
+9.Assigning weights to the acotr-Movie rank from the actor-movie table:
+------------------------------------------------------------------------
+(refer tag_count.py subtask-2)
+The same exponential decay function is used, but in reverse sense. THe lowest number will have the highest weight and vice versa.
+
+
+10.Calculating weighted total and averag tagCount for each genome ie tagid:
+---------------------------------------------------------------------------
+(refer tag_count.py subtask-4)
+The is calculated as sum(newness_weight for all tag occurence)/tagCount
+
+11. Now to get classic raw_tf , we calculate tf/total freuencies. 
+------------------------------------------------------------------
+	This can be augumented by the avg or total timewighted_tf. OR we can calculate the classic timeweighted_tf ,we can do total_tw_tf/total weight. Both data values are calculated and later on inspected.
+
+Comparing the classic_raw_tf and classic_tw_tf we can see that classic_tw_tf gives more weight to more newer tags, even if their frequency is same:
+
+mysql> select * from `genome-tags` limit 10;
++-------+--------------------+-----------+-----------------------+-----------+----------------+---------------+
+| tagID | tag                | tag_count | total_timeweighted_tf | avg_tw_tf | classic_raw_tf | classic_tw_tf |
++-------+--------------------+-----------+-----------------------+-----------+----------------+---------------+
+| 8     | 1970s              | 1         | 0.59571               | 0.59571   | 0.00039        | 0.00045       |
+| 13    | 80s                | 1         | 0.77182               | 0.77182   | 0.00039        | 0.00059       |
+| 25    | addiction          | 1         | 0.47616               | 0.47616   | 0.00039        | 0.00036       | |
+| 28    | adultery           | 1         | 0.53206               | 0.53206   | 0.00039        | 0.0004        |
++-------+--------------------+-----------+-----------------------+-----------+----------------+---------------+
+4 rows in set (0.00 sec)
+
+
+12. New columns added till tf was calculated:
+----------------------------------------------
+genome-tags : total_timeweighted_tf | avg_tw_tf | classic_raw_tf | classic_tw_tf
+movie-actor : actor_movie_rank_weight
+mltags       : newness_weight
+
+13.TF MODEL calculation for actor vector:
+------------------------
+refer : actor_vector_model.py
+
+The flow is as follows : 
+	i.From the actorId get the actor-movie rank weight and the movieID
+	ii. For each movieID get the corresponding list of tagIDs from the mltags table.
+	iii. For each tag, get the classic_tw_tf (as it gives the more weight to more relevant tag)
+	iv. Add the actor-movie-rank weight to the classic_tw_tf to get the total weight.
+	v. Store the result in as keyvalue pair
+	vi. Once all pairs are populated, sort the dictionary in reverse order.
+
+
+14. The previous tf and idf calculation was found to be erronous. TF should return the frequency of the tags that occur for a specific actor. So if for a specific actor, for his specific movie, if the tag is new then only the newness_weight of that particular entry should be accounted.If the average weight for that tag is taken, then it icludes data irrevelant to that movie and actor. Thus the new tf calculation is as follows:
+	a. Get the list of movies for an actor
+	b. For each movie get the tag.
+	c. If the tag is not seen before, create an entry for the tag in the dictionary and add the corresponding newness_weight
+	d. If the tag is already in the dictionary, then update the value by add the newnewss_weight to the older entry.
+		note - during each step of addition, divide the newness_weight by total_newness_weight and multiply by the rank_weight. We multiply instead of add so that the rank_weight is not multipled by the denominator total_newness_weight
+	c. 
+
+This is also wrong ->Now run another loop that adds the rank_weight as well to the overall tag newness_weight for each tag. before the mistake was that the rank_weight was being added to only the last tag. 
+
+
+15. New IDF calculation:
+	IDF value returns how well a data object differentiates the given data. So given an actorid and its tag, the number of movies listed will the "documents" used for differentiating. IF a tag returns large number of movies, then it has low differentiating power. On the other hand if the movies returned is few, then we can be sure that the tag is more unique and hence has high differentiating power. SO to calculate the idf value we do as follows:
+	a. Get the list of movies for an actor
+	b. For each movie get the tag.
+	c. If the tag is not seen before, create an entry for the tag in the dictionary and add the count as 1, since the tag is seen for 1 		movie of that actor.
+	d. If the tag is seen before, increment the count by 1.
+	e. Once last entry is detected, then calculate the idf value as loge(total movies / movie count for a tag).
+	f. Multiply the idf with tf(which already has the movie_rank weight added to it.)
+
+
+ 
+16. Note: Other tag weights should be zero. Also return tagnames, instead of tagIDs 
+
+
+17. Genres tag vector :
+------------------------
+
+1. cleaning the data. multiple genres are given for a movie. Need to segregate them first. Use the python split command and for each gener assigned to a movie, create a new entry in a separate mlmovies_clean table.
+(refer tag_count.py)
+
+2.Now follow the same steps as done for actor. Use genere instead of the actorID.
+
+
+18. USERid tag vector:
+----------------------
+We use the mlratings table to get list of movies watched by a user, the reason being that a user might have watched a movie, but not given a tag to it.
+
+The steps are similar to that done for the actor tag vector.
+
+19. Analyze : For all the vectors seen so far, for the last tag weights , tf = tfidf. IT means that idf = 1 (since tfidf = tf * idf). Why does the idf become 1?
+
+20. The IDF values are corrected. Previous assumption of taking movies as a unique document is incorrect since we have a actor tag, genre tag and user tag vector. So the documents should be actors, genre and users respectively. Calculate the unique count of actor, genre and userid returned for each tag. (Now need to calculate the idf value using it). The count of this new table is 557 which means that all tags atleast return 1 value for an actor(need to check for genre and userid) 
+
+21.For calculating the unique genres returned by tag, first get list of unique genres from the mlmovies_clean table. Then repeat the same process as done for actor.
+
+
+
+
+

@@ -1,0 +1,17 @@
+mysql> SELECT actorid,COUNT(*) as count FROM `movie-actor` GROUP BY actorid ORDER BY count DESC limit 10;
++---------+-------+
+| actorid | count |
++---------+-------+
+| 316365  |    11 |
+| 61523   |    11 |
+| 2532241 |    10 |
+| 2846487 |    10 |
+| 3689711 |    10 |
+| 2411110 |    10 |
+| 3161739 |     9 |
+| 692749  |     9 |
+| 3444948 |     9 |
+| 2284269 |     9 |
++---------+-------+
+10 rows in set (0.07 sec)
+
