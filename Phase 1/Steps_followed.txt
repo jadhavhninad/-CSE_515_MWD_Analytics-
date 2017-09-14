@@ -145,6 +145,12 @@ The steps are similar to that done for the actor tag vector.
 
 21.For calculating the unique genres returned by tag, first get list of unique genres from the mlmovies_clean table. Then repeat the same process as done for actor.
 
+22. For calculating the unique userid returned by tag, its taking a lot of time since there are ~30k distinct userids in the mlratings table. Got an overflow error.
+
+So first create a table with unique userids who have rated a movie.
+Now take 1000 rows at a time and keep adding the values for the found tags in the table.
+It could be that since dbcommit was not being run after every update, the commit was overflowing.
+
 
 
 
