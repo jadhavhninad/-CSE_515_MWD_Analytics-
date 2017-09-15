@@ -32,10 +32,11 @@ total_rank_weight = result0[0]
 
 total_tag_newness_weight = 0
 
-#Get total movie count for idf calculation.
-cur2.execute("SELECT COUNT(movieid) FROM mlmovies")
+#Get total movie-acto count for idf calculation. Here every movie-actor row value is a document , ie a combination
+#for which a particular tag occurs.
+cur2.execute("SELECT COUNT(distinct movieid,actorid) FROM `movie-actor`")
 result0 = cur2.fetchone()
-total_movie_count = result0[0]
+total_documents = float(result0[0])
 
 
 #print total_rank_weight
@@ -75,15 +76,14 @@ for data1 in result1:
 
 
 
-#Make weight of other tags to zero and for all the tags already there, calculate the TF by dividing with total_tag
-#newness_weight
+#Make weight of other tags to zero and for all the tags already there, calculate the TF by dividing with total_tag_newness_weight
 cur2.execute("SELECT tag FROM `genome-tags`")
 tagName = cur2.fetchall()
 
 for key in tagName:
     if key in data_dictionary_tf:
-        #data_dictionary_tf[key] = round((float(data_dictionary_tf[key]) / float(total_tag_newness_weight)),10)
-        continue;
+        #print 'curval',key
+        data_dictionary_tf[key] = round((float(data_dictionary_tf[key]) / float(total_tag_newness_weight)),10)
     else:
         data_dictionary_tf[key] = 0
 
@@ -102,38 +102,37 @@ else:
         # print data1
         act_movie_id = data1[0]
 
-        # Select tagIDs for the movieID
-        cur2.execute("SELECT tagid FROM mltags WHERE movieid = %s", [act_movie_id])
+        # Select tagIDs for the movieID. we choose distinct since the total_weighted_movie_actor_count is already precomputed.
+        cur2.execute("SELECT distinct(tagid) FROM mltags WHERE movieid = %s", [act_movie_id])
         result4 = cur2.fetchall()
 
         for data2 in result4:
             actor_tag_id = data2[0]
 
-            cur2.execute("SELECT tag FROM `genome-tags` WHERE tagID = %s", [actor_tag_id])
-            result2_sub = cur2.fetchall()
+            cur2.execute("SELECT tag,total_wt_movie_actor_count FROM `genome-tags` WHERE tagID = %s", [actor_tag_id])
+            result2_sub = cur2.fetchone()
             tagName = result2_sub[0]
+            tag_movie_actor_count = result2_sub[1]
 
             if tagName in data_dictionary_tf_idf:
-                data_dictionary_tf_idf[tagName] = int(data_dictionary_tf_idf[tagName]) + 1
+                continue
             else:
-                data_dictionary_tf_idf[tagName] = 1
+                data_dictionary_tf_idf[tagName] = float(tag_movie_actor_count)
+
 
     #Once all the tag data has been recorded, calculate the idf  and tfidf for each tag.
-    for key in data_dictionary_tf_idf:
-        data_dictionary_tf_idf[key] = round((float(log((total_movie_count/data_dictionary_tf_idf[key]),2.71828))), 10)
-        #e = 2.71828 upto 5 signigicant digits.
-        data_dictionary_tf_idf[key] = round((data_dictionary_tf[key] * data_dictionary_tf_idf[key]), 10)
-
-
     #Make weight of other tags to zero.
     cur2.execute("SELECT tag FROM `genome-tags`")
-    tagName = cur2.fetchall()
+    tgName = cur2.fetchall()
 
-    for key in tagName:
-        if key in data_dictionary_tf_idf:
-            continue;
+    for key in tgName:
+        keyval =  key[0]
+        if keyval in data_dictionary_tf_idf:
+            data_dictionary_tf_idf[keyval] = round((float(log((total_documents / data_dictionary_tf_idf[keyval]), 2.71828))),10)
+            data_dictionary_tf_idf[keyval] = round(float(float(data_dictionary_tf[key]) * float(data_dictionary_tf_idf[keyval])), 10)
         else:
             data_dictionary_tf_idf[key] = 0
+
 
     actor_model_value_tf_idf = sorted(data_dictionary_tf_idf.items(), key=operator.itemgetter(1), reverse=True)
     pprint.pprint(actor_model_value_tf_idf)

@@ -7,11 +7,11 @@ db_conn = db.get_connection()
 
 cur2 = db_conn.cursor();
 
-
-#TASK 1 : Calculating the data for TF model
-
+#------------------------------------------------------
+#TASK 1 : General Pre-processing
+#------------------------------------------------------
 '''
-#Subtask  - 1 : Get a list of tagIDs from the genome-tag table
+#Subtask  - 1 : Get a list of tagIDs from the genome-tag table - not used so far
 
 query1 = "Select tagid from `genome-tags`"
 cur2.execute(query1)
@@ -29,6 +29,8 @@ for id in result:
 '''
 #Subtask - 2 :  Calculate the time weights of tags timestamp in mltags table -
 #1.using exponential decay
+
+#add a column newness_weight in the table mltags.
 
 cur2.execute("Select timestamp from `mltags`")
 result = cur2.fetchall()
@@ -58,7 +60,7 @@ for timedata in result:
 print("----------------------------")
 #2. Using Inverse-squared decay
 
-#This function is not selected as using similar decay function, the exponential decay gives better normalized
+#This function is not selected as using similar decay function, the exponential decay gives better
 values than inverse squared decay function.
 
 cur2.execute("Select timestamp from `mltags` limit 10")
@@ -84,6 +86,11 @@ for timedata in result:
     db_conn.commit()
 
 '''
+
+
+#----------------------------------------------
+#TASK-2: Pre-processing for actor tag vector
+#----------------------------------------------
 
 '''
 #Subtask-3 : Calculate the weights for movie-actor rank in movie actor table.
@@ -134,92 +141,70 @@ for rankdata in result:
 '''
 
 '''
-#Subtask-4 : Calculating weighted tf for each genome ie tagid.
-    #This is calculated as sum(newness_weight for all tag occurence)/tagCount
-
-query1 = "Select tagid from `genome-tags`"
-cur2.execute(query1)
-result = cur2.fetchall()
-
-for id in result:
-    #Get all the newness_weight entries for a tagid.
-    cur2.execute("SELECT newness_weight  from `mltags` where tagid = %s", (id))
-    tag_values = cur2.fetchall()
-
-    #calculate the total tag_newness
-    tag_newness_sum=0
-    for tag_entry in tag_values:
-        tag_newness_sum = tag_newness_sum + float(tag_entry[0])
-
-    #Get idCount
-    cur2.execute("SELECT tag_count from `genome-tags` where tagid = %s", (id))
-    idCount = cur2.fetchone()
-
-    #Calculate the average time_weighted tag frequency
-    avg_tw_tf = round(tag_newness_sum / int(idCount[0]),5)
-
-    #print avg_tw_tf
-
-    #Update in the genome-tag table as avg_timeweighted_tf
-    cur2.execute("UPDATE `genome-tags` set avg_tw_tf = %s where tagid= %s ",(avg_tw_tf,id))
-    db_conn.commit()
-
-    #Update total_timeweighted_tf
-    cur2.execute("UPDATE `genome-tags` set total_timeweighted_tf = %s where tagid= %s ",(tag_newness_sum,id))
-    db_conn.commit()
-
-'''
-'''
-#Subtask-5 : Calculating the classic raw_tf and timeweighted_tf for the tagid.
-
-    #a. raw_tf = tag_count / total entries in mltags
-
-query1 = "Select tag_count from `genome-tags`"
-cur2.execute(query1)
-result = cur2.fetchall()
-
-for countId in result:
-
-    sub_query1 = "Select count(*) from mltags"
-    cur2.execute(sub_query1)
-    tag_total = cur2.fetchone();
-    raw_tf = round(float(countId[0]) / float(tag_total[0]),5)
-
-    cur2.execute("UPDATE `genome-tags` set classic_raw_tf = %s where tag_count= %s ",(raw_tf,countId))
-    db_conn.commit()
-'''
-
-'''
-    #b. classic_tw_tf = total_tw_tf / sum of all newness_weights in mltags
-
-query1 = "SELECT total_timeweighted_tf FROM `genome-tags`"
-cur2.execute(query1)
-result = cur2.fetchall()
-
-for wtId in result:
-
-    sub_query1 = "SELECT sum(newness_weight) FROM mltags"
-    cur2.execute(sub_query1)
-    newness_total = cur2.fetchone();
-    cls_tw_tf = round(float(wtId[0]) / float(newness_total[0]),5)
-
-    cur2.execute("UPDATE `genome-tags` set classic_tw_tf = %s where total_timeweighted_tf= %s ", (cls_tw_tf, wtId))
-    db_conn.commit()
-
-'''
-
-#----------------------------------------------
-#TASK-2: Calculating the data for TF-IDF model.
-#----------------------------------------------
 
     #Since we already have the TF value and it's data, we now generate the required data for idf.
-    #IDF here will be considered as the number of actors that belong to a certain tag. So the idf calculation will be
-    # Total actors / no. of actors with a particular tag
+    #IDF here will be considered as the number of movie-actors that belong to a certain tag. So the idf calculation will be
+    # Total movie-actors / sum of weight of movie-actors with a particular tag
     #But we will use : rank_weight sum / sum of rank weights for a particular tag.
     #Both raw idf and tw_idf will be calculated for comparison.
 
+#Calculate the total weighted count for movie-actor count for each tag.
+#weighted count for an occurance of a tag = tag_newness * actor-rank-weight
+
+#Create a column weighted_movie-actor count for storing the values
+cur2.execute("Alter table `genome-tags` add column total_wt_movie_actor_count varchar(20) NULL")
+db_conn.commit()
+
+weighted_actor_movie_count={}
+
+cur2.execute("SELECT movieid,actor_movie_rank_weight FROM `movie-actor`")
+result1 = cur2.fetchall()
+for data1 in result1:
+    #print data1
+    act_movie_id   = data1[0]
+    act_movie_rank_wt = data1[1]
+    actor_tag_id=""
+    final_tag_wt=""
+
+
+    #Select distint tagIDs for the movieID
+    cur2.execute("SELECT tagid,newness_weight FROM mltags WHERE movieid = %s",[act_movie_id])
+    result2 = cur2.fetchall()
+
+    for data2 in result2:
+        actor_tag_id = data2[0]
+        actor_tag_newness = data2[1]
+
+        #Get the tag_name for the tagID. For each tag weight, add the rank_weight as well.
+        cur2.execute("SELECT tag FROM `genome-tags` WHERE tagID = %s", [actor_tag_id])
+        result2_sub = cur2.fetchall()
+        tagName = result2_sub[0]
+
+        #tagWeight = round(((float(actor_tag_newness)/ float(total_tag_newness_weight)) * float(act_movie_rank_wt)),10)
+        tagWeight = round((float(actor_tag_newness) * float(act_movie_rank_wt)), 10)
+
+        if tagName in weighted_actor_movie_count:
+            weighted_actor_movie_count[tagName] = round((weighted_actor_movie_count[tagName] + tagWeight), 10)
+        else:
+            weighted_actor_movie_count[tagName] = tagWeight
+
+
+
+#Update the total_weighted_actor_count for all the tags already there, in the same column in genome-tags
+
+cur2.execute("SELECT tag FROM `genome-tags`")
+tagName = cur2.fetchall()
+
+for key in tagName:
+    if key in weighted_actor_movie_count:
+        cur2.execute("UPDATE `genome-tags` set total_wt_movie_actor_count= %s where tag=%s",(weighted_actor_movie_count[key],key))
+        db_conn.commit();
+    else:
+        weighted_actor_movie_count[key] = 0
 '''
-#Subtask-1
+
+'''
+#Subtask-1 - this is not required.
     #Calulate the raw frequency of the actors with specific tags and update in genome-tags.raw_frequency table.
 
 query1 = "SELECT tagID FROM `genome-tags`"
@@ -269,11 +254,18 @@ for tg_id in result1:
 
 '''
 
+#==========================================================
+#TASK - 3 : PRE - PROCESSING FOR GENRE VECTOR
+#==========================================================
+
 '''
-#TASK 3 - Cleaning the mlmovies table. Getting single row for a single genre.
+#SUB -TASK 1 - Cleaning the mlmovies table. Getting single row for a single genre.
 
     #a. Create a new table mlmovies_clean that has a single entry for a single genre.
     #b. For each entry in the mlmovies create an entry in mlmovies_clean that has a unique genre entry.
+
+query1 = "create table `mlmovies_clean`(movieid varchar(10) NOT NULL, moviename varchar(200) NOT NULL, genres varchar(200 NOT NULL))"
+db_conn.commit()
 
 query1 = "SELECT * FROM `mlmovies`"
 cur2.execute(query1)
@@ -294,6 +286,128 @@ for entry in result1:
 
 '''
 '''
+#Sub-TASK 2 : creating a weighted_genre_movie_count for calculating the idf value.
+
+    #Since we already have the TF value and it's data, we now generate the required data for idf.
+    #IDF here will be considered as the number of movie-genre that belong to a certain tag. So the idf calculation will be
+    # Total movie-genres / sum of weight of movie-genres with a particular tag
+
+#Calculate the total weighted count for movie-genre count for each tag.
+#weighted count for an occurance of a tag = tag_newness
+
+#Create a column weighted_movie-genre count for storing the values
+cur2.execute("Alter table `genome-tags` add column total_wt_movie_genre_count varchar(20) NULL")
+db_conn.commit()
+
+weighted_genre_movie_count={}
+
+cur2.execute("SELECT movieid FROM `mlmovies_clean`")
+result1 = cur2.fetchall()
+for data1 in result1:
+    #print data1
+    genre_movie_id   = data1[0]
+    genre_tag_id=""
+    final_tag_wt=""
+
+
+    #Select distint tagIDs for the movieID
+    cur2.execute("SELECT tagid,newness_weight FROM mltags WHERE movieid = %s",[genre_movie_id])
+    result2 = cur2.fetchall()
+
+    for data2 in result2:
+        genre_tag_id = data2[0]
+        genre_tag_newness = data2[1]
+
+        #Get the tag_name for the tagID. For each tag weight, add the rank_weight as well.
+        cur2.execute("SELECT tag FROM `genome-tags` WHERE tagID = %s", [genre_tag_id])
+        result2_sub = cur2.fetchall()
+        tagName = result2_sub[0]
+
+        tagWeight = round((float(genre_tag_newness)),10)
+
+        if tagName in weighted_genre_movie_count:
+            weighted_genre_movie_count[tagName] = round((weighted_genre_movie_count[tagName] + tagWeight), 10)
+        else:
+            weighted_genre_movie_count[tagName] = tagWeight
+
+
+#Update the total_weighted_genre_count for all the tags already there, in the same column in genome-tags
+
+cur2.execute("SELECT tag FROM `genome-tags`")
+tagName = cur2.fetchall()
+
+for key in tagName:
+    if key in weighted_genre_movie_count:
+        cur2.execute("UPDATE `genome-tags` set total_wt_movie_genre_count= %s where tag=%s",(weighted_genre_movie_count[key],key))
+        db_conn.commit();
+    else:
+        weighted_genre_movie_count[key] = 0
+'''
+
+#==========================================================
+#TASK - 3 : PRE - PROCESSING FOR USER VECTOR
+#==========================================================
+
+#Sub-TASK 2 : creating a weighted_user_movie_count for calculating the idf value.
+
+    #Since we already have the TF value and it's data, we now generate the required data for idf.
+    #IDF here will be considered as the number of user-movie that belong to a certain tag. So the idf calculation will be
+    # Total movie-user / sum of weight of movie-user for a particular tag
+
+#Calculate the total weighted count for movie-user count for each tag.
+#weighted count for an occurance of a tag = tag_newness
+
+#Create a column weighted_movie-genre count for storing the values
+cur2.execute("Alter table `genome-tags` add column total_wt_movie_user_count varchar(20) NULL")
+db_conn.commit()
+
+weighted_user_movie_count={}
+
+cur2.execute("SELECT movieid FROM `mlratings`")
+result1 = cur2.fetchall()
+for data1 in result1:
+    #print data1
+    user_movie_id   = data1[0]
+    user_tag_id=""
+    final_tag_wt=""
+
+
+    #Select distint tagIDs for the movieID
+    cur2.execute("SELECT tagid,newness_weight FROM mltags WHERE movieid = %s",[user_movie_id])
+    result2 = cur2.fetchall()
+
+    for data2 in result2:
+        user_tag_id = data2[0]
+        user_tag_newness = data2[1]
+
+        #Get the tag_name for the tagID. For each tag weight, add the rank_weight as well.
+        cur2.execute("SELECT tag FROM `genome-tags` WHERE tagID = %s", [user_tag_id])
+        result2_sub = cur2.fetchall()
+        tagName = result2_sub[0]
+
+        tagWeight = round((float(user_tag_newness)),10)
+
+        if tagName in weighted_user_movie_count:
+            weighted_user_movie_count[tagName] = round((weighted_user_movie_count[tagName] + tagWeight), 10)
+        else:
+            weighted_user_movie_count[tagName] = tagWeight
+
+
+#Update the total_weighted_genre_count for all the tags already there, in the same column in genome-tags
+
+cur2.execute("SELECT tag FROM `genome-tags`")
+tagName = cur2.fetchall()
+
+for key in tagName:
+    if key in weighted_user_movie_count:
+        cur2.execute("UPDATE `genome-tags` set total_wt_movie_user_count= %s where tag=%s",(weighted_user_movie_count[key],key))
+        db_conn.commit();
+    else:
+        weighted_user_movie_count[key] = 0
+
+
+'''
+This is not required since we are now using movie-actor count
 #Get the count of number of unique actors returned by a tag.
 #Pre-calculate : For each actor, for each of his movie, increment the tag. If a tag is already incremented, skip it.
 #Add a table that stores tag id and unique actor it returns.
@@ -350,127 +464,6 @@ db_conn.commit()
 
 '''
 
-'''
-#Get the count of number of unique genres returned by a tag.
-#Pre-calculate : For each genre, for each of its movie, increment the tag. If a tag is already incremented, skip it.
-#Add a table that stores tag id and unique actor it returns.
-
-data_dictionary_alltagcount={}
-
-cur2.execute("SELECT DISTINCT genres from `mlmovies_clean`")
-result0 = cur2.fetchall()
-for eachGenre in result0:
-
-    data_dictionary_genretagcount={}
-
-    cur2.execute("SELECT movieid FROM `mlmovies_clean` where genres=%s",[eachGenre[0]])
-    result1 = cur2.fetchall()
-    for data1 in result1:
-        #print data1
-        genre_movie_id   = data1[0]
-
-        #Select distint tagIDs for the movieID
-        cur2.execute("SELECT tagid FROM mltags WHERE movieid = %s",[genre_movie_id])
-        result2 = cur2.fetchall()
-
-        for data2 in result2:
-            #_size_count = _size_count + 1
-            genre_tag_id = data2[0]
-
-            #Get the tag_name for the tagID.
-            cur2.execute("SELECT tag FROM `genome-tags` WHERE tagID = %s", [genre_tag_id])
-            result2_sub = cur2.fetchall()
-            tagName = result2_sub[0]
-
-            if tagName in data_dictionary_genretagcount:
-                continue
-            else:
-                data_dictionary_genretagcount[tagName] = 1
-
-    #Once we have a unique values for all tags that refer to an actor, add it to the already calculated tagcount
-    #for other actors.
-    for key in data_dictionary_genretagcount:
-        if key in data_dictionary_alltagcount:
-            data_dictionary_alltagcount[key] =  data_dictionary_alltagcount[key] + data_dictionary_genretagcount[key]
-        else:
-            data_dictionary_alltagcount[key] = data_dictionary_genretagcount[key]
-
-#once we have count of unique actors returned by a tag, update it in the table tag-actorCount.
-
-
-for key in data_dictionary_alltagcount:
-    cur2.execute('UPDATE `tag_actorCount`set genreCount = %s where tag=%s', (data_dictionary_alltagcount[key],key))
-
-db_conn.commit()
-
-'''
-
-'''
-#First insert a list of all unique users who have rated a movie, in a table.
-cur2.execute("SELECT DISTINCT userid from `mlratings`")
-result0 = cur2.fetchall()
-for eachUser in result0:
-    cur2.execute('INSERT INTO `rating_users_distinct`(userid) VALUES(%s)',[eachUser[0]])
-
-db_conn.commit()
-'''
-
-#Get the count of number of unique users returned by a tag.
-#Pre-calculate : For each user, for each of movie they watched, increment the tag. If a tag is already incremented, skip it.
-#Add a table that stores tag id and unique actor it returns.
-
-data_dictionary_alltagcount={}
-
-cur2.execute("SELECT userid from `rating_users_distinct`")
-result0 = cur2.fetchall()
-for eachUser in result0:
-
-    data_dictionary_usertagcount={}
-
-    cur2.execute("SELECT movieid FROM `mlratings` where userid=%s",[eachUser[0]])
-    result1 = cur2.fetchall()
-    for data1 in result1:
-        #print data1
-        user_movie_id   = data1[0]
-
-        #Select distint tagIDs for the movieID
-        cur2.execute("SELECT tagid FROM mltags WHERE movieid = %s",[user_movie_id])
-        result2 = cur2.fetchall()
-
-        for data2 in result2:
-            #_size_count = _size_count + 1
-            user_tag_id = data2[0]
-
-            #Get the tag_name for the tagID.
-            cur2.execute("SELECT tag FROM `genome-tags` WHERE tagID = %s", [user_tag_id])
-            result2_sub = cur2.fetchall()
-            tagName = result2_sub[0]
-
-            if tagName in data_dictionary_usertagcount:
-                continue
-            else:
-                data_dictionary_usertagcount[tagName] = 1
-
-    #Once we have a unique values for all tags that refer to an actor, add it to the already calculated tagcount
-    #for other actors. In case the dictionary is still empty, don't do anything and move to next user.
-    if bool(data_dictionary_usertagcount) !=False:
-        for key in data_dictionary_usertagcount:
-            if key in data_dictionary_alltagcount:
-                data_dictionary_alltagcount[key] =  data_dictionary_alltagcount[key] + data_dictionary_usertagcount[key]
-            else:
-                data_dictionary_alltagcount[key] = data_dictionary_usertagcount[key]
-
-#once we have count of unique actors returned by a tag, update it in the table tag-actorCount.
-print "Updating the DB now."
-
-for key in data_dictionary_alltagcount:
-    #cur2.execute('SELECT `userCount` FROM `tag_actorCount` where tag=%s', (key))
-    #val = cur2.fetchone()
-    #new_val = int(val[0]) + data_dictionary_alltagcount[key]
-    #print key
-    #print new_val
-    cur2.execute('UPDATE `tag_actorCount`set userCount = %s where tag=%s', (data_dictionary_alltagcount[key],key))
-    db_conn.commit()
 
 
 

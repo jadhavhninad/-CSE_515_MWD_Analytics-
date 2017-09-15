@@ -152,6 +152,13 @@ Now take 1000 rows at a time and keep adding the values for the found tags in th
 It could be that since dbcommit was not being run after every update, the commit was overflowing.
 
 
+23. A new final approach has been implemented for idf calculation.
+actor -> docuement = all movie-actors row values in the movie-actor table / sum of weighted movie-actor tag count
+(for implementiation see the tagCOunt.py)
 
+same approach for genres and userid.
 
+Note : movies watched by a user = > its entry in the mlratings table. Assumption is that if a user has rated only if he has watched. also there are more rows in the mlratings than mltags (~25x more). Hence even if a user has directly tagged a movie, we are assuming that he has not watched and ignore it. The likelihood of this is very small though.
+
+Also each user has rated or tagged a movie only once. This was based on running a distinct query for movieiad and userid in the mlratings and mltags tables. It matches the total count for those tables respectively. 
 
