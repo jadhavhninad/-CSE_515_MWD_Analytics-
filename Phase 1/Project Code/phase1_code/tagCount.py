@@ -1,6 +1,6 @@
 from mysqlConn import DbConnect
 from datetime import datetime
-from math import exp
+from math import exp,log
 
 db = DbConnect()
 db_conn = db.get_connection()
@@ -87,6 +87,74 @@ for timedata in result:
 
 '''
 
+#Using FEATURE SCALING.
+'''
+#NO USE OF TAKING LOG, DIRECTLY NORMALIZE
+#Data is positively skewed.Most of the data values lie in date 2006 (50%)Using log to reduce skewness
+
+cur2.execute("Alter table `mltags` add column ts_log varchar(20) NOT NULL")
+
+cur2.execute("Select timestamp from `mltags`")
+result = cur2.fetchall()
+fmt = '%Y-%m-%d %H:%M:%S'
+
+for timedata in result:
+    ts = datetime.strptime(timedata[0], fmt)
+    ts_val = ts - datetime.strptime("1970-01-1 00:00:00",fmt)
+    ts_val = ts_val.total_seconds()
+    cur2.execute("UPDATE `mltags` set ts_log = %s where timestamp = %s", (log(ts_val,2), timedata[0]))
+    db_conn.commit()
+'''
+'''
+#Using normalization on the log timestamp values (feature scaling)
+
+cur2.execute("Select ts_log from `mltags` order by ts_log asc limit 1")
+result = cur2.fetchone()
+ts_min = float(result[0])
+
+cur2.execute("Select ts_log from `mltags` order by ts_log desc limit 1")
+result = cur2.fetchone()
+ts_max = float(result[0])
+
+ts_diff = ts_max - ts_min
+
+#cur2.execute("Alter table `mltags` add column newness_wt_norm varchar(20) NOT NULL")
+
+cur2.execute("Select ts_log from `mltags`")
+result = cur2.fetchall()
+fmt = '%Y-%m-%d %H:%M:%S'
+
+for timedata in result:
+    ts_wt = float((float(timedata[0]) - ts_min) / ts_diff)
+    cur2.execute("UPDATE `mltags` set newness_wt_norm = %s where ts_log = %s", (ts_wt, timedata[0]))
+    db_conn.commit()
+'''
+'''
+#Using just normalization on the timestamp values.
+fmt = '%Y-%m-%d %H:%M:%S'
+cur2.execute("Select timestamp from `mltags` order by timestamp asc limit 1")
+result = cur2.fetchone()
+ts_min = datetime.strptime(result[0], fmt)
+
+cur2.execute("Select timestamp from `mltags` order by timestamp desc limit 1")
+result = cur2.fetchone()
+ts_max = datetime.strptime(result[0], fmt)
+
+ts_diff = ts_max - ts_min
+
+#cur2.execute("Alter table `mltags` add column newness_wt_norm_nolog varchar(20) NOT NULL")
+
+cur2.execute("Select timestamp from `mltags`")
+result = cur2.fetchall()
+fmt = '%Y-%m-%d %H:%M:%S'
+
+for timedata in result:
+    ts_val = datetime.strptime(timedata[0], fmt)
+    ts_wt = (ts_val - ts_min).total_seconds() / ts_diff.total_seconds()
+    cur2.execute("UPDATE `mltags` set newness_wt_norm_nolog = %s where timestamp = %s", (ts_wt, timedata[0]))
+    db_conn.commit()
+
+'''
 
 #----------------------------------------------
 #TASK-2: Pre-processing for actor tag vector
@@ -285,7 +353,7 @@ for entry in result1:
     db_conn.commit()
 
 '''
-'''
+
 #Sub-TASK 2 : creating a weighted_genre_movie_count for calculating the idf value.
 
     #Since we already have the TF value and it's data, we now generate the required data for idf.
@@ -311,7 +379,7 @@ for data1 in result1:
 
 
     #Select distint tagIDs for the movieID
-    cur2.execute("SELECT tagid,newness_weight FROM mltags WHERE movieid = %s",[genre_movie_id])
+    cur2.execute("SELECT tagid,newness_wt_norm_nolog FROM mltags WHERE movieid = %s",[genre_movie_id])
     result2 = cur2.fetchall()
 
     for data2 in result2:
@@ -342,7 +410,8 @@ for key in tagName:
         db_conn.commit();
     else:
         weighted_genre_movie_count[key] = 0
-'''
+
+
 
 #==========================================================
 #TASK - 3 : PRE - PROCESSING FOR USER VECTOR
@@ -373,7 +442,7 @@ for data1 in result1:
 
 
     #Select distint tagIDs for the movieID
-    cur2.execute("SELECT tagid,newness_weight FROM mltags WHERE movieid = %s",[user_movie_id])
+    cur2.execute("SELECT tagid,newness_wt_norm_nolog FROM mltags WHERE movieid = %s",[user_movie_id])
     result2 = cur2.fetchall()
 
     for data2 in result2:

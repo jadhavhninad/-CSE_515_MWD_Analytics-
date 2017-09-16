@@ -48,6 +48,7 @@ for row in csv_data:
 db_conn.commit()
 
 db_conn.close()
-#print (Imported)
+
+print "All data has been Imported"
 """
 

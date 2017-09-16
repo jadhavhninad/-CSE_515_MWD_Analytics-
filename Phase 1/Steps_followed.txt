@@ -27,7 +27,7 @@ Create a backup DB, the use the following generic query:
 mysqldump -u DB_user --password=DB_pass DB_name | mysql -u DB_user --password=DB_pass -h DB_host DB_name 
 
 
-7.Calculating Tag Frequency from the mltags table:
+7.Calculating Tag Frequency from the mltags table: - not required as weighted tag frequency is used (remove this table)
 --------------------------------------------------
 (Refer tagCount.py)
 	a.The tag frequency was calculated for each tagID in the genome-tags table based on the data from mltags table. The new frequency data was stored in genome-tags table as tag_count.
@@ -57,12 +57,12 @@ Using an exponential funtion because this helps us to maintain the relevance of 
 The same exponential decay function is used, but in reverse sense. THe lowest number will have the highest weight and vice versa.
 
 
-10.Calculating weighted total and averag tagCount for each genome ie tagid:
+10.Calculating weighted total and averag tagCount for each genome ie tagid: - not required
 ---------------------------------------------------------------------------
 (refer tag_count.py subtask-4)
 The is calculated as sum(newness_weight for all tag occurence)/tagCount
 
-11. Now to get classic raw_tf , we calculate tf/total freuencies. 
+11. Now to get classic raw_tf , we calculate tf/total freuencies.  - not required.
 ------------------------------------------------------------------
 	This can be augumented by the avg or total timewighted_tf. OR we can calculate the classic timeweighted_tf ,we can do total_tw_tf/total weight. Both data values are calculated and later on inspected.
 
@@ -161,4 +161,6 @@ same approach for genres and userid.
 Note : movies watched by a user = > its entry in the mlratings table. Assumption is that if a user has rated only if he has watched. also there are more rows in the mlratings than mltags (~25x more). Hence even if a user has directly tagged a movie, we are assuming that he has not watched and ignore it. The likelihood of this is very small though.
 
 Also each user has rated or tagged a movie only once. This was based on running a distinct query for movieiad and userid in the mlratings and mltags tables. It matches the total count for those tables respectively. 
+
+24. Exponential decay implementation is not accurate and keeps the data skewed. Changed to feature scaling using normalization. Tried to take log for reducing skew, but it makes very small (0.1 max) difference on the normalized values, hence its of now use. So all the preprocessed weight values are recalculated using the normalized weights.
 

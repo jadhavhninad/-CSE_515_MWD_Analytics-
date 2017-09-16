@@ -114,7 +114,7 @@ else:
         keyval = key[0]
         if keyval in data_dictionary_tf_idf:
             data_dictionary_tf_idf[keyval] = round((float(log((total_documents / data_dictionary_tf_idf[keyval]), 2.71828))), 10)
-            data_dictionary_tf_idf[keyval] = round((data_dictionary_tf[key] * data_dictionary_tf_idf[keyval]), 10)
+            #data_dictionary_tf_idf[keyval] = round((data_dictionary_tf[key] * data_dictionary_tf_idf[keyval]), 10)
         else:
             data_dictionary_tf_idf[key] = 0
 
