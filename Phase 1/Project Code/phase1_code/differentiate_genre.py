@@ -276,7 +276,7 @@ elif args.MODEL == "P-DIFF1" :
                 dd_r1_genre1[tagName] = 1
 
 
-    #Calculation for genre2. m=movies in genre1 U genre 2 with tag t
+    #Calculation for m=movies in genre1 U genre 2 with tag t
 
     cur2.execute("SELECT distinct(movieid) FROM `mlmovies_clean` where genres=%s || genres=%s",[args.GENRE1,args.GENRE2])
     result1 = cur2.fetchall()
@@ -302,11 +302,18 @@ elif args.MODEL == "P-DIFF1" :
                 dd_m1_genre2[tagName] = 1
 
 
+    #print dd_r1_genre1
+    #print dd_m1_genre2
+
     #Subtask:2 - Calculate the pdiff1 using the given formula
     pdiff_wt_genre1={}
 
-    for tag in dd_r1_genre1:
-        r = float(dd_r1_genre1[tag])
+    for tag in dd_m1_genre2:
+        r=0
+
+        if tag in dd_r1_genre1:
+            r = float(dd_r1_genre1[tag])
+
         m = float(dd_m1_genre2[tag])
 
         val1=0
@@ -331,7 +338,7 @@ elif args.MODEL == "P-DIFF1" :
         val2 = float((m-r+p_tag)/(M-m-R+r+1))
         val4 = float((m-r+p_tag)/(M-R+1))
 
-        pdiff_wt_genre1[tag] = float(log(float(val1/val3),2)) * float(val2 - val4)
+        pdiff_wt_genre1[tag] = float(log(float(val1/val2),2)) * float(val3 - val4)
 
 
     #Make weight of other tags to zero
@@ -425,8 +432,13 @@ elif args.MODEL == "P-DIFF2":
     #Subtask:2 - Calculate the pdiff1 using the given formula
     pdiff_wt_genre1={}
 
-    for tag in dd_r1_genre1:
-        r = R - float(dd_r1_genre1[tag])
+    for tag in dd_m1_genre2:
+
+        r = R
+
+        if tag in dd_r1_genre1:
+            r = R - float(dd_r1_genre1[tag])
+
         m = M - float(dd_m1_genre2[tag])
 
         val1=0
@@ -452,7 +464,7 @@ elif args.MODEL == "P-DIFF2":
         val2 = float((m-r+p_tag)/(M-m-R+r+1))
         val4 = float((m-r+p_tag)/(M-R+1))
 
-        pdiff_wt_genre1[tag] = float(log(float(val1/val3),2)) * (float(val2 - val4))
+        pdiff_wt_genre1[tag] = float(log(float(val1/val2),2)) * (float(val3 - val4))
 
 
     #Make weight of other tags to zero
