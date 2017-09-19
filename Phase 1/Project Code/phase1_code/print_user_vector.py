@@ -43,7 +43,7 @@ for data1 in result1:
     user_movie_id = data1[0]
 
     #Select distint tagIDs for the movieID
-    cur2.execute("SELECT tagid,newness_weight FROM mltags WHERE movieid = %s",[user_movie_id])
+    cur2.execute("SELECT tagid,newness_wt_norm_nolog FROM mltags WHERE movieid = %s",[user_movie_id])
     result2 = cur2.fetchall()
 
     for data2 in result2:
@@ -52,7 +52,7 @@ for data1 in result1:
 
         #Get the tag_name for the tagID.
         cur2.execute("SELECT tag FROM `genome-tags` WHERE tagID = %s", [user_tag_id])
-        result2_sub = cur2.fetchall()
+        result2_sub = cur2.fetchone()
         tagName = result2_sub[0]
 
         tagWeight = round(float(user_tag_newness),10)
@@ -67,7 +67,8 @@ for data1 in result1:
 cur2.execute("SELECT tag FROM `genome-tags`")
 tagName = cur2.fetchall()
 
-for key in tagName:
+for keyval in tagName:
+    key = keyval[0]
     if key in data_dictionary_tf:
         data_dictionary_tf[key] = round((float(data_dictionary_tf[key]) / float(total_tag_newness_weight)), 10)
     else:
@@ -115,9 +116,9 @@ else:
         keyval = key[0]
         if keyval in data_dictionary_tf_idf:
             data_dictionary_tf_idf[keyval] = round((float(log((total_document / data_dictionary_tf_idf[keyval]), 2.71828))),10)
-            data_dictionary_tf_idf[keyval] = round((data_dictionary_tf[key] * data_dictionary_tf_idf[keyval]), 10)
+            data_dictionary_tf_idf[keyval] = round((data_dictionary_tf[keyval] * data_dictionary_tf_idf[keyval]), 10)
         else:
-            data_dictionary_tf_idf[key] = 0
+            data_dictionary_tf_idf[keyval] = 0
 
 
     user_model_value_tf_idf = sorted(data_dictionary_tf_idf.items(), key=operator.itemgetter(1), reverse=True)

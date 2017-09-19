@@ -1,0 +1,36 @@
+ninad@ninad-lpc:~/ASU Data/Courses/MWD/Project/Phase 1/Project Code/phase1_code$ python queryDB.py "/home/ninad/ASU Data/Courses/MWD/Project/Phase 1/test_data"
+Importing data from path :  /home/ninad/ASU Data/Courses/MWD/Project/Phase 1/test_data
+imdb-actor-info - done
+genome-tags - done
+mlmovies - done
+mlratings done
+mltags done
+mlusers done
+movie-actor done
+All data has been Imported
+
+ninad@ninad-lpc:~/ASU Data/Courses/MWD/Project/Phase 1/Project Code/phase1_code$ python tagCount.py
+General preprocessing done.
+Starting preprocessing for actor tag vector...
+done
+Starting preprocessing for genre tag vectors...
+done
+Starting pre-processing for user vector...
+done
+all Preprocessing has been completed
+ninad@ninad-lpc:~/ASU Data/Courses/MWD/Project/Phase 1/Project Code/phase1_code$ 
+
+EXECUTION COMMANDS
+ninad@ninad-lpc:~/ASU Data/Courses/MWD/Project/Phase 1/Project Code/phase1_code$ python print_actor_vector.py 1575755 tfidf > actor_tfidf.txt
+ninad@ninad-lpc:~/ASU Data/Courses/MWD/Project/Phase 1/Project Code/phase1_code$ python print_actor_vector.py 1575755 tf > actor_tf.txt
+ninad@ninad-lpc:~/ASU Data/Courses/MWD/Project/Phase 1/Project Code/phase1_code$ python print_genre_vector.py Documentary tf > genre_tf.txt
+ninad@ninad-lpc:~/ASU Data/Courses/MWD/Project/Phase 1/Project Code/phase1_code$ python print_genre_vector.py Documentary tfidf > genre_tf.txt
+ninad@ninad-lpc:~/ASU Data/Courses/MWD/Project/Phase 1/Project Code/phase1_code$ python print_user_vector.py 1988 tf > user_tf.txt
+ninad@ninad-lpc:~/ASU Data/Courses/MWD/Project/Phase 1/Project Code/phase1_code$ python print_user_vector.py 1988 tfidf > user_tfidf.txt
+ninad@ninad-lpc:~/ASU Data/Courses/MWD/Project/Phase 1/Project Code/phase1_code$ python print_genre_vector.py Documentary tf > genre_tf.txt
+ninad@ninad-lpc:~/ASU Data/Courses/MWD/Project/Phase 1/Project Code/phase1_code$ python print_genre_vector.py Documentary tfidf > genre_tfidf.txt
+ninad@ninad-lpc:~/ASU Data/Courses/MWD/Project/Phase 1/Project Code/phase1_code$ python differentiate_genre.py Comedy Horror TF-IDF-DIFF > genre_tfidf-diff.txt
+ genre_pdiff1.txt
+ninad@ninad-lpc:~/ASU Data/Courses/MWD/Project/Phase 1/Project Code/phase1_code$ python differentiate_genre.py Comedy Horror P-DIFF1 > genre_pdiff1.txt
+ninad@ninad-lpc:~/ASU Data/Courses/MWD/Project/Phase 1/Project Code/phase1_code$ python differentiate_genre.py Comedy Horror P-DIFF2 > genre_pdiff2.txt
+ 

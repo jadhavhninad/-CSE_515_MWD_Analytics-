@@ -1,5 +1,3 @@
-#import pymysql.cursors
-
 import MySQLdb
 
 # open a database connection
@@ -7,11 +5,8 @@ import MySQLdb
 
 class DbConnect():
     def __init__(self):
-
-        #self.conn = MySQLdb.connect(host='localhost', user='root', password='abc123',db='mwd_phase1',charset='utf8mb4',
-        #                       cursorclass=pymysql.cursors.DictCursor)
-
         self.conn = MySQLdb.connect(host='localhost', user='root', passwd='abc123', db='mwd_phase1')
+        #self.conn = MySQLdb.connect(host='localhost', user='root', passwd='abc123', db='mwd_p1test')
         self.cur = self.conn.cursor()
 
     def get_connection(self):

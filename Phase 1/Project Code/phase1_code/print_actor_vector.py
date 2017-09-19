@@ -26,7 +26,7 @@ data_dictionary_tf_idf = {}
 
 #Get sum of the rank_weights for calculating the idf value (sum of all rankweights/ sum of rank_weights for a specific tag)
 
-cur2.execute("SELECT SUM(actor_movie_rank_weight) FROM `movie-actor`")
+cur2.execute("SELECT SUM(rank_wt_norm) FROM `movie-actor`")
 result0 = cur2.fetchone()
 total_rank_weight = result0[0]
 
@@ -41,7 +41,7 @@ total_documents = float(result0[0])
 
 #print total_rank_weight
 
-cur2.execute("SELECT movieid,actor_movie_rank_weight FROM `movie-actor` where actorid = %s",[args.ACTOR_ID])
+cur2.execute("SELECT movieid,rank_wt_norm FROM `movie-actor` where actorid = %s",[args.ACTOR_ID])
 result1 = cur2.fetchall()
 for data1 in result1:
     #print data1
@@ -52,7 +52,7 @@ for data1 in result1:
 
 
     #Select distint tagIDs for the movieID
-    cur2.execute("SELECT tagid,newness_weight FROM mltags WHERE movieid = %s",[act_movie_id])
+    cur2.execute("SELECT tagid,newness_wt_norm_nolog FROM mltags WHERE movieid = %s",[act_movie_id])
     result2 = cur2.fetchall()
 
     for data2 in result2:
@@ -131,7 +131,7 @@ else:
             data_dictionary_tf_idf[keyval] = round((float(log((total_documents / data_dictionary_tf_idf[keyval]), 2.71828))),10)
             data_dictionary_tf_idf[keyval] = round(float(float(data_dictionary_tf[key]) * float(data_dictionary_tf_idf[keyval])), 10)
         else:
-            data_dictionary_tf_idf[key] = 0
+            data_dictionary_tf_idf[keyval] = 0
 
 
     actor_model_value_tf_idf = sorted(data_dictionary_tf_idf.items(), key=operator.itemgetter(1), reverse=True)
