@@ -63,7 +63,7 @@ if args.MODEL== "TF-IDF-DIFF":
         genre_tag_id=""
 
         #Select distint tagIDs for the movieID
-        cur2.execute("SELECT tagid,newness_weight FROM mltags WHERE movieid = %s",[genre_movie_id])
+        cur2.execute("SELECT tagid,newness_wt_norm_nolog FROM mltags WHERE movieid = %s",[genre_movie_id])
         result2 = cur2.fetchall()
 
         for data2 in result2:
@@ -100,7 +100,7 @@ if args.MODEL== "TF-IDF-DIFF":
         genre_movie_id = data1[0]
 
         #Select distint tagIDs for the movieID
-        cur2.execute("SELECT tagid,newness_weight FROM mltags WHERE movieid = %s",[genre_movie_id])
+        cur2.execute("SELECT tagid,newness_wt_norm_nolog FROM mltags WHERE movieid = %s",[genre_movie_id])
         result2 = cur2.fetchall()
 
         for data2 in result2:
@@ -152,7 +152,7 @@ if args.MODEL== "TF-IDF-DIFF":
         genre_movie_id = data1[0]
 
         #Select distint tagIDs for the movieID
-        cur2.execute("SELECT tagid,newness_weight FROM mltags WHERE movieid = %s",[genre_movie_id])
+        cur2.execute("SELECT tagid,newness_wt_norm_nolog FROM mltags WHERE movieid = %s",[genre_movie_id])
         result2 = cur2.fetchall()
 
         for data2 in result2:
