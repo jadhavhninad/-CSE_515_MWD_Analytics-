@@ -1,4 +1,7 @@
 Phase 2 : Reference Links:
 For all panda queries : https://pandas.pydata.org/pandas-docs/stable/tutorials.html
 
+Building latent factor recommender system
+https://www.youtube.com/watch?v=GGWBMg0i9d4&list=PLLssT5z_DsK9JDLcT8T62VtzwyW9LNepV&t=3
+
 
