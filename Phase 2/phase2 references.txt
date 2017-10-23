@@ -4,4 +4,11 @@ For all panda queries : https://pandas.pydata.org/pandas-docs/stable/tutorials.h
 Building latent factor recommender system
 https://www.youtube.com/watch?v=GGWBMg0i9d4&list=PLLssT5z_DsK9JDLcT8T62VtzwyW9LNepV&t=3
 
+https://docs.scipy.org/doc/numpy-1.13.0/reference/routines.linalg.html
+http://scikit-learn.org/stable/modules/generated/sklearn.decomposition.TruncatedSVD.html
 
+https://stanford.edu/~rezab/classes/cme323/S15/notes/lec14.pdf
+
+https://docs.scipy.org/doc/numpy-1.13.0/reference/generated/numpy.linalg.solve.html
+Unofficial:
+https://bugra.github.io/work/notes/2014-04-19/alternating-least-squares-method-for-collaborative-filtering/

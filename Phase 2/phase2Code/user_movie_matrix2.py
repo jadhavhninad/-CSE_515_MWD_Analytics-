@@ -3,7 +3,6 @@ Here we get a  the user_movie matrix by using dot product of the  transpose of u
 for a specific user.
 '''
 
-
 from mysqlConn import DbConnect
 import pandas as pd
 import numpy as np
@@ -12,6 +11,7 @@ import argparse
 import operator
 from math import log,exp
 import pprint
+from datetime import datetime
 
 #DB connector and curosor
 db = DbConnect()
@@ -23,7 +23,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument("USER")
 args = parser.parse_args()
 
-'''
+
 #------------------------------------------------------
 #TASK 1 : General Pre-processing
 #------------------------------------------------------
@@ -139,8 +139,8 @@ print "Starting preprocessing for genre tag vectors..."
 #weighted count for an occurance of a tag = tag_newness
 
 #Create a column weighted_movie-genre count for storing the values
-####cur2.execute("Alter table `genome-tags` add column total_wt_movie_genre_count varchar(20) NULL")
-#db_conn.commit()
+cur2.execute("Alter table `genome-tags` add column total_wt_movie_genre_count varchar(20) NULL")
+db_conn.commit()
 
 weighted_genre_movie_count={}
 
@@ -191,7 +191,7 @@ for keyval in tagName:
 db_conn.commit();
 
 print "done"
-'''
+
 #===================================================================
 #Task-4: Generate the tag vectors for each genre using tf-idf model
 #===================================================================
@@ -384,8 +384,11 @@ movie_genre_matrix.to_csv("movie_genre_matrix.csv", sep='\t')
 dd_users_genre = {}
 
 
-#Get all the users. Lmiting the user to 10 for now.
-cur2.execute("SELECT userid FROM `mlusers` limit 10")
+#Get all the users.
+#cur2.execute("SELECT userid FROM `mlusers` limit 500")
+
+#Get for all 22000 users.
+cur2.execute("SELECT userid FROM `mlusers`")
 result0 = cur2.fetchall();
 for usr in result0:
     #print usr[0]
@@ -519,52 +522,3 @@ for i in range(0,5,1):
     print cur2.fetchone()
 
 
-'''
-
-count=0
-recommend=[]
-
-print "-------------------------------"
-print "-------Recommended movies------"
-
-for keys in sorted_x:
-    #print keys[0]
-    cur2.execute("SELECT movieid FROM `mlmovies_clean` where genres = %s", {keys[0],})
-    result0 = cur2.fetchall()
-    for data in result0:
-        if data[0] in userWatchedMovies:
-            continue
-        else:
-            recommend.append(data[0])
-            count+=1
-            if count==5 : break
-    if count == 5: break
-
-for rec_ids in recommend:
-    #print rec_ids
-    cur2.execute("SELECT moviename,genres FROM `mlmovies` where movieid = %s", {rec_ids, })
-    print cur2.fetchone()
-'''
-'''
-similarity_user = usr_movie_matrix.dot(usr_movie_matrix.T) + 1e-9
-norms = np.array([np.sqrt(np.diagonal(similarity_user))])
-similarity_user = ( similarity_user / (norms * norms.T))
-
-print norms
-
-similarity_movie = usr_movie_matrix.T.dot(usr_movie_matrix) + 1e-9
-norms = np.array([np.sqrt(np.diagonal(similarity_movie))])
-similarity_movie = ( similarity_movie / (norms * norms.T) )
-
-
-
-#prediction = similarity_user.dot(usr_movie_matrix) / np.array([np.abs(similarity_user).sum(axis=1)]).T
-
-
-
-prediction = prediction[test_matrix.nonzero()].flatten()
-test_vector = test_matrix[test_matrix.nonzero()].flatten()
-mse = mean_squared_error(prediction, test_vector)
-
-print 'MSE = ' + str(mse)
-'''

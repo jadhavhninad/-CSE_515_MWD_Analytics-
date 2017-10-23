@@ -5,8 +5,18 @@ import MySQLdb
 
 class DbConnect():
     def __init__(self):
-        self.conn = MySQLdb.connect(host='localhost', user='root', passwd='abc123', db='mwd_phase2')
-        #self.conn = MySQLdb.connect(host='localhost', user='root', passwd='abc123', db='mwd_p1test')
+        #Initail tests done here
+        #self.conn = MySQLdb.connect(host='localhost', user='root', passwd='abc123', db='mwd_phase2')
+
+        #For testing Phase2 - MODEL-1
+        #self.conn = MySQLdb.connect(host='localhost', user='root', passwd='abc123', db='mwd_phase2_test1')
+
+        #For testing Phase2 - MODEL-2
+        self.conn = MySQLdb.connect(host='localhost', user='root', passwd='abc123', db='mwd_phase2_test2')
+
+        # For testing Phase2 - MODEL-3
+        #self.conn = MySQLdb.connect(host='localhost', user='root', passwd='abc123', db='mwd_phase2_test3')
+
         self.cur = self.conn.cursor()
 
     def get_connection(self):

@@ -26,7 +26,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument("USER")
 args = parser.parse_args()
 
-'''
+
 #==========================================================
 #TASK - 1 : PRE - PROCESSING
 #==========================================================
@@ -86,7 +86,7 @@ for movie_year in result:
     movie_wt = float(exp(-k*diff))
     cur2.execute("UPDATE `mlmovies` set year_wt = %s where year = %s",(movie_wt,movie_year[0]))
     db_conn.commit()
-'''
+
 
 #====================================================================
 #Task-3 :Calculate the user_genre matrix
@@ -96,7 +96,10 @@ dd_users_genre = {}
 
 
 #Get all the users
-cur2.execute("SELECT userid FROM `mlusers` limit 10")
+#cur2.execute("SELECT userid FROM `mlusers` limit 500")
+
+#Test all the 22000 users.
+cur2.execute("SELECT userid FROM `mlusers`")
 result0 = cur2.fetchall();
 for usr in result0:
     #print usr[0]
@@ -224,26 +227,4 @@ for rec_ids in recommend:
     cur2.execute("SELECT moviename,genres FROM `mlmovies` where movieid = %s", {rec_ids, })
     print cur2.fetchone()
 
-'''
-similarity_user = usr_movie_matrix.dot(usr_movie_matrix.T) + 1e-9
-norms = np.array([np.sqrt(np.diagonal(similarity_user))])
-similarity_user = ( similarity_user / (norms * norms.T))
 
-print norms
-
-similarity_movie = usr_movie_matrix.T.dot(usr_movie_matrix) + 1e-9
-norms = np.array([np.sqrt(np.diagonal(similarity_movie))])
-similarity_movie = ( similarity_movie / (norms * norms.T) )
-
-
-
-#prediction = similarity_user.dot(usr_movie_matrix) / np.array([np.abs(similarity_user).sum(axis=1)]).T
-
-
-
-prediction = prediction[test_matrix.nonzero()].flatten()
-test_vector = test_matrix[test_matrix.nonzero()].flatten()
-mse = mean_squared_error(prediction, test_vector)
-
-print 'MSE = ' + str(mse)
-'''
