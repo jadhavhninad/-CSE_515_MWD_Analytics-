@@ -17,7 +17,7 @@ def get_user_mvrating_DF():
     dd_total_movie_for_genre = {}
 
     #Limit is for checking that algorithm works.
-    cur2.execute("SELECT userid FROM `mlusers`")
+    cur2.execute("SELECT userid FROM `mlusers` limit 1000")
     result0 = cur2.fetchall();
     for usr in result0:
         #print "for user" , usr[0]
@@ -65,13 +65,20 @@ def get_user_mvrating_DF():
             #print data1
             user_movie_id = data[0]
             cur2.execute("SELECT genres FROM `mlmovies_clean` where movieid = %s", {user_movie_id, })
-            mv_genre = cur2.fetchone()[0]
+            mv_genre = cur2.fetchall()
 
             if user_movie_id in dd_users_mvrating[usr[0]]:
                 continue
             else:
                 #print user_movie_id
-                dd_users_mvrating[usr[0]][user_movie_id] = dd_av_rating_for_genre[usr[0]][mv_genre]/dd_total_movie_for_genre[usr[0]][mv_genre]
+                val = 0.0
+                for gen in mv_genre:
+                    if gen in dd_av_rating_for_genre[usr[0]]:
+                        val += float(dd_av_rating_for_genre[usr[0]][gen])/float(dd_total_movie_for_genre[usr[0]][gen])
+                    else:
+                        val = 1.0
+
+                dd_users_mvrating[usr[0]][user_movie_id] = val/float(len(mv_genre))
 
 
         #Make rating of other movies to zero.

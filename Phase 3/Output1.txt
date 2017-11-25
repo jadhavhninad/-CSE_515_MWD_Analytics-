@@ -1,0 +1,103 @@
+k latent semantics = 20, 5000 users, 50 interations
+Error =  484.626684337
+0th iteration is completed
+.
+.
+.
+Error =  97.9639241404
+49th iteration is completed
+ninad@ninad-lpc:~/ASU_DATA/Courses/MWD/Project/Phase 2/phase2Code$ python matrix_factorization_recommender.py 12
+-----Watched movies-------
+('Pitch Black', 'Thriller')
+('Romeo Must Die', 'Crime|Action|Thriller')
+-------Top 5 Recommended movies------
+('9739', 2.0)
+('Freedom Writers', 'Drama')
+('6087', 2.0)
+('Gods and Generals', 'Action|Drama')
+('3189', 2.0)
+('Scream 3', 'Thriller|Comedy')
+('8902', 2.0)
+('Son of the Mask', 'Action|Adventure|Comedy')
+('5000', 2.0)
+('Rollerball', 'Action')
+
+
+k latent semantics = 50, 1000 users, 100 interations
+Error =  484.626684337
+0th iteration is completed
+.
+.
+.
+Error =  1.68455417818
+99th iteration is completed
+
+ninad@ninad-lpc:~/ASU_DATA/Courses/MWD/Project/Phase 2/phase2Code$ python matrix_factorization_recommender.py 12
+-----Watched movies-------
+('Pitch Black', 'Thriller')
+('Romeo Must Die', 'Crime|Action|Thriller')
+-------Top 5 Recommended movies------
+('3906', 2.0)
+('Dungeons & Dragons', 'Adventure')
+('3854', 2.0)
+('Digimon: The Movie', 'Adventure')
+('4064', 2.0)
+('Sweet November', 'Drama')
+('9821', 1.0)
+('United 300', 'Action')
+('4075', 1.0)
+('Series 7: The Contenders', 'Action|Drama')
+
+
+
+FOR LDA:
+k latent semantics = 50, 1000 users, 100 interations
+Error =  444.230944669
+0th iteration is completed
+.
+.
+.
+99th iteration is completed
+ninad@ninad-lpc:~/ASU_DATA/Courses/MWD/Project/Phase 3/Phase3_code$ python matrix_factorization_recommender_lda.py 12
+-----Watched movies-------
+('Pitch Black', 'Thriller')
+('Romeo Must Die', 'Crime|Action|Thriller')
+-------Top 5 Recommended movies------
+('7755', 4.0)
+('Harry Potter and the Prisoner of Azkaban', 'Adventure')
+('5293', 3.0)
+('Insomnia', 'Crime|Action|Thriller|Drama')
+('3324', 3.0)
+('Final Destination', 'Thriller|Drama')
+('4252', 3.0)
+('Swordfish', 'Crime|Action|Drama')
+('4354', 3.0)
+('Final Fantasy: The Spirits Within', 'Adventure')
+
+
+k latent semantics = 20, 5000 users, 50 interations
+Error =  6418.95285367
+0th iteration is completed
+.
+.
+.
+Error =  59.9492643336
+49th iteration is completed
+ninad@ninad-lpc:~/ASU_DATA/Courses/MWD/Project/Phase 3/Phase3_code$ python matrix_factorization_recommender_lda.py 12
+-----Watched movies-------
+('Pitch Black', 'Thriller')
+('Romeo Must Die', 'Crime|Action|Thriller')
+-------Top 5 Recommended movies------
+('3323', 7.0)
+('Erin Brockovich', 'Drama')
+('7755', 6.0)
+('Harry Potter and the Prisoner of Azkaban', 'Adventure')
+('5123', 5.0)
+('Ice Age', 'Adventure|Comedy')
+('9821', 4.0)
+('United 300', 'Action')
+('5293', 4.0)
+('Insomnia', 'Crime|Action|Thriller|Drama')
+
+
+

@@ -9,6 +9,7 @@ import matplotlib
 import matplotlib.pyplot as plt
 import pandas as pd
 from numpy.linalg import *
+from scipy.sparse.linalg import svds
 from scipy.stats.stats import pearsonr
 from numpy import linalg as la
 matplotlib.style.use('ggplot')
@@ -46,8 +47,10 @@ kvm = kvm.astype(float64, copy=False)
 #=================================================================================
 
 #How can I select a reduced number of latent semantics here?
-latent_sem = 86
-U, s, V = linalg.svd(R, full_matrices=False)
+#latent_sem = 86
+#U, s, V = linalg.svd(R, full_matrices=False)
+k_topics = 50
+U, s, V = svds(R, k=k_topics)
 #s = linalg.svd(raw_data, full_matrices=False, compute_uv = False)
 
 #U_df = pd.DataFrame(U)
@@ -72,7 +75,7 @@ U, s, V = linalg.svd(R, full_matrices=False)
 #print U.shape, s.shape, V.shape
 
 #Generate the Sig matrix of size latent_sem X latent_sem with the values in the diagonal
-Sig= zeros((latent_sem, latent_sem), dtype=complex)
+Sig= zeros((k_topics, k_topics), dtype=complex)
 Sig = diag(s)
 pd.DataFrame(Sig).to_csv("Sig_df.csv",sep='\t')
 
@@ -94,7 +97,7 @@ ld=0.1
 #reg_value = ld*(sum(Q**2) + sum(P**2))
 
 weighted_errors = []
-n_iterations = 50 #After checking for 10,20,100 iterations, found that errors start to converge after 50 interations
+n_iterations = 100 #After checking for 10,20,100 iterations, found that errors start to converge after 50 interations
 
 #print Q.shape
 #print P.shape
@@ -106,12 +109,12 @@ for ii in range(n_iterations):
     for u, Wu in enumerate(kvm):
         #print Wu
         #print diag(Wu)
-        Q[u] = linalg.solve(dot(P, dot(diag(Wu), P.T)) + ld * eye(latent_sem),dot(P, dot(diag(Wu), R[u].T))).T
-        #Q[u] = linalg.solve(dot(P,P.T) + ld * eye(latent_sem), dot(P,R[u].T)).T
+        Q[u] = linalg.solve(dot(P, dot(diag(Wu), P.T)) + ld * eye(k_topics),dot(P, dot(diag(Wu), R[u].T))).T
+        #Q[u] = linalg.solve(dot(P,P.T) + ld * eye(k_topics), dot(P,R[u].T)).T
 
     for i, Wi in enumerate(kvm.T):
-        P[:, i] = linalg.solve(dot(Q.T, dot(diag(Wi), Q)) + ld * eye(latent_sem), dot(Q.T, dot(diag(Wi), R[:, i])))
-        #P[:, i] = linalg.solve(dot(Q.T, Q) + ld * eye(latent_sem), dot(Q.T, R[:, i]))
+        P[:, i] = linalg.solve(dot(Q.T, dot(diag(Wi), Q)) + ld * eye(k_topics), dot(Q.T, dot(diag(Wi), R[:, i])))
+        #P[:, i] = linalg.solve(dot(Q.T, Q) + ld * eye(k_topics), dot(Q.T, R[:, i]))
 
 
     R_prime = dot(Q, P)
