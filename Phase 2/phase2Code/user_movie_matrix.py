@@ -26,7 +26,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument("USER")
 args = parser.parse_args()
 
-
+'''
 #==========================================================
 #TASK - 1 : PRE - PROCESSING
 #==========================================================
@@ -87,7 +87,7 @@ for movie_year in result:
     cur2.execute("UPDATE `mlmovies` set year_wt = %s where year = %s",(movie_wt,movie_year[0]))
     db_conn.commit()
 
-
+'''
 #====================================================================
 #Task-3 :Calculate the user_genre matrix
 #====================================================================
@@ -99,7 +99,7 @@ dd_users_genre = {}
 #cur2.execute("SELECT userid FROM `mlusers` limit 500")
 
 #Test all the 22000 users.
-cur2.execute("SELECT userid FROM `mlusers`")
+cur2.execute("SELECT userid FROM `mlusers` limit 750")
 result0 = cur2.fetchall();
 for usr in result0:
     #print usr[0]
@@ -123,6 +123,11 @@ for usr in result0:
             #print vals
             cur2.execute("SELECT year_wt FROM `mlmovies` where genres = %s", vals)
             mv_weight = cur2.fetchone()[0]
+            #mvweight = cur2.fetchone()
+            #print mvweight
+            #print mvweight
+            #mv_weight = mvweight[0]
+            #print mv_weight
 
             if vals[0] in dd_users_genre[usr[0]]:
                 dd_users_genre[usr[0]][vals[0]] += (mv_weight * int(user_movie_rating))
